@@ -12,13 +12,17 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="mx-auto max-w-6xl px-4 pb-24 pt-24">
+      <section className="mx-auto max-w-6xl px-4 pb-16 pt-24">
         <h1 className="max-w-5xl font-display text-4xl leading-none tracking-tighter md:text-6xl">
           Describe the Roblox game. Haliux drafts it with free open models.
         </h1>
         <p className="mt-6 max-w-[65ch] text-base leading-relaxed text-gray-600">
           Type a prompt, attach an image or a 3D reference, pick Gemma, Qwen or DeepSeek. No credits. No account. Paste a Roblox Open Cloud key once and publish directly.
         </p>
+        <form action="/studio" method="get" className="mt-8 flex max-w-2xl gap-2 rounded-full border border-ink/15 bg-white p-2">
+          <input name="q" placeholder="A lava obby with 12 stages and coins" className="w-full rounded-full px-4 py-2 outline-none" />
+          <button type="submit" className="rounded-full bg-accent px-6 py-2 text-white">Generate</button>
+        </form>
         <div className="mt-8 flex gap-3">
           <Link href="/studio" className="rounded-full bg-accent px-6 py-3 text-white">
             Start building
