@@ -1,32 +1,33 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Gear, Wrench, FolderSimple, Plus, ArrowRight } from "@phosphor-icons/react";
 import { FREE_MODELS, DEFAULT_MODEL } from "@/lib/models";
 import { describe3DFile } from "@/lib/model3d";
 
 type Msg = { role: "user" | "assistant"; text: string };
 
-const QUICK = ["Create claimable plots", "Add timed rounds", "Add a building mechanic"];
+const QUICK = ["Create claimable plots", "Add timed rounds", "Add a building system"];
 
 export default function Builder() {
   const [model, setModel] = useState(DEFAULT_MODEL);
-  const [msgs, setMsgs] = useState<Msg[]>([{ role: "assistant", text: "Welcome. Describe the game and I will draft the Luau. Attach images or 3D refs with the plus button." }]);
+  const [tab, setTab] = useState<"agent" | "explore">("agent");
+  const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [zoom, setZoom] = useState(100);
-  const [node, setNode] = useState({ x: 50, y: 42 });
-  const [goals, setGoals] = useState<string[]>(["First playable draft", "Roblox publish check"]);
+  const [zoom, setZoom] = useState(120);
+  const [node, setNode] = useState({ x: 46, y: 44 });
+  const [goals] = useState(["First playable draft", "Publish check"]);
   const [done, setDone] = useState<boolean[]>([false, false]);
+  const [showGoals, setShowGoals] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [ref3d, setRef3d] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try {
-      const h = JSON.parse(localStorage.getItem("haliux.history") || "[]");
-      if (h.length) setMsgs((m) => [...m, { role: "assistant", text: `Recent: ${h[0].slice(0, 90)}` }]);
-    } catch { /* empty */ }
-  }, []);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs.length, busy]);
 
   async function send(text: string) {
     const q = text.trim();
@@ -63,28 +64,45 @@ export default function Builder() {
   }
 
   return (
-    <main className="flex h-[100dvh] w-full overflow-hidden bg-zinc-950 text-white">
-      <aside className="flex w-12 flex-col items-center gap-4 border-r border-white/10 py-4">
-        <Link href="/" className="font-display text-lg font-bold">H</Link>
-        <Link href="/studio" className="rounded-lg border border-white/10 px-2 py-1 text-xs text-white/70">S</Link>
-        <span className="mt-auto rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] text-emerald-300">Free</span>
+    <main className="flex h-[100dvh] w-full overflow-hidden bg-[#0a0a0b] text-white">
+      <aside className="flex w-14 shrink-0 flex-col items-center gap-5 border-r border-white/10 py-4">
+        <Link href="/" className="flex h-8 w-8 items-center justify-center rounded-full bg-white font-display text-sm font-bold text-black">H</Link>
+        <span className="rounded-md border border-white/10 p-1.5 text-white/50"><FolderSimple size={16} /></span>
+        <span className="mt-auto flex flex-col items-center gap-4 text-white/50">
+          <Gear size={18} /><Wrench size={18} /><FolderSimple size={18} />
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-xs">B</span>
+        </span>
       </aside>
 
-      <section className="relative flex-1">
-        <header className="absolute left-4 right-4 top-4 flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-sm">
+      <section className="relative min-w-0 flex-1">
+        <header className="absolute left-4 right-4 top-4 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#141416] px-3 py-2 text-[13px]">
             <span className="font-medium">project</span>
-            <span className="text-white/40">0 mechanics - 0 links</span>
+            <span className="text-sky-400">0 systems - 0 links</span>
           </div>
-          <div className="rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-sm text-white/70">Agent mode</div>
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#141416] px-3 py-2 text-[13px]">
+            <button onClick={() => setTab("agent")} className={tab === "agent" ? "text-white" : "text-white/40"}>Agent</button>
+            <span className={`relative h-5 w-9 rounded-full ${tab === "agent" ? "bg-white/20" : "bg-white/10"}`} onClick={() => setTab(tab === "agent" ? "explore" : "agent")}>
+              <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${tab === "agent" ? "left-0.5" : "left-5"}`} />
+            </span>
+            <button onClick={() => setTab("explore")} className={tab === "explore" ? "text-white" : "text-white/40"}>Explore</button>
+          </div>
           <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => setDone(done.map(() => true))}
-              className="rounded-full border border-white/10 bg-zinc-900 px-4 py-2 text-sm"
-            >
-              Goals {done.filter(Boolean).length}/{goals.length}
-            </button>
-            <label className="cursor-pointer rounded-full bg-white px-4 py-2 text-sm text-black">
+            <div className="relative">
+              <button onClick={() => setShowGoals(!showGoals)} className="rounded-xl border border-white/10 bg-[#141416] px-4 py-2 text-[13px]">
+                Goals {done.filter(Boolean).length}/{goals.length}
+              </button>
+              {showGoals && (
+                <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-white/10 bg-[#141416] p-3">
+                  {goals.map((g, i) => (
+                    <label key={g} className="flex items-center gap-2 py-1 text-[13px] text-white/70">
+                      <input type="checkbox" checked={done[i]} onChange={() => setDone(done.map((d, j) => (j === i ? !d : d)))} />{g}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <label className="cursor-pointer rounded-xl bg-[#e8e8e6] px-4 py-2 text-[13px] font-medium text-black">
               Import game
               <input type="file" accept=".rbxm,.rbxl,.lua,.luau" className="hidden" onChange={(e) => send(`Import ${e.target.files?.[0]?.name || "file"} and summarize its systems`)} />
             </label>
@@ -93,67 +111,78 @@ export default function Builder() {
 
         <div
           className="h-full w-full"
-          style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.14) 1px, transparent 1px)", backgroundSize: `${20 * zoom / 100}px ${20 * zoom / 100}px` }}
+          style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.16) 1px, transparent 1.4px)", backgroundSize: `${18 * zoom / 120}px ${18 * zoom / 120}px` }}
           onDoubleClick={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
             setNode({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 });
           }}
         >
-          <div className="absolute" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-zinc-900 text-2xl">H</div>
-            <div className="mt-2 rounded-full border border-white/10 bg-zinc-900 px-4 py-1 text-center text-sm">project</div>
+          <div className="absolute -translate-x-1/2 -translate-y-1/2 text-center" style={{ left: `${node.x}%`, top: `${node.y}%` }}>
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-[#1a1a1d] text-xl font-bold text-sky-300">H</div>
+            <div className="mx-auto mt-3 w-fit rounded-full border border-white/10 bg-[#141416] px-4 py-1.5 text-[13px]">project</div>
           </div>
         </div>
 
-        <div className="absolute bottom-6 left-4 flex items-center gap-2 rounded-full border border-white/10 bg-zinc-900 px-2 py-1 text-sm">
-          <button onClick={() => setZoom(Math.max(50, zoom - 10))} className="px-2">-</button>
-          <span>{zoom}%</span>
-          <button onClick={() => setZoom(Math.min(200, zoom + 10))} className="px-2">+</button>
+        <div className="absolute bottom-5 left-4 flex items-center gap-1 rounded-xl border border-white/10 bg-[#141416] px-2 py-1.5 text-[13px]">
+          <button onClick={() => setZoom(Math.max(50, zoom - 10))} className="rounded-md px-2 hover:bg-white/10">-</button>
+          <span className="min-w-12 text-center">{zoom}%</span>
+          <button onClick={() => setZoom(Math.min(200, zoom + 10))} className="rounded-md px-2 hover:bg-white/10">+</button>
         </div>
-        <p className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 text-xs text-white/30 md:block">Double click canvas to move the project node</p>
       </section>
 
-      <section className="flex w-full max-w-md flex-col border-l border-white/10 bg-zinc-900">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <h2 className="font-medium">Chat</h2>
-          <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-300">No credits</span>
+      <section className="flex w-full max-w-[420px] shrink-0 flex-col border-l border-white/10 bg-[#101012]">
+        <div className="flex items-center justify-between px-5 py-4">
+          <h2 className="text-[15px] font-medium">Chat</h2>
+          <div className="flex items-center gap-2 text-[13px]">
+            <span className="rounded-lg bg-white/5 px-3 py-1.5 text-white/60">Free</span>
+            <button onClick={() => setMsgs([])} className="rounded-lg bg-white/5 px-3 py-1.5 text-white/60">History</button>
+          </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto px-5 py-3">
-          {QUICK.map((q) => (
-            <button key={q} onClick={() => send(q)} className="whitespace-nowrap rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/5">{q}</button>
-          ))}
-        </div>
-
-        <div className="flex-1 space-y-3 overflow-auto px-5 py-2">
-          {msgs.map((m, i) => (
-            <div key={i} className={m.role === "user" ? "ml-8 rounded-2xl bg-white/10 p-3 text-sm" : "mr-8 rounded-2xl border border-white/10 p-3 text-sm text-white/85"}>
-              <pre className="whitespace-pre-wrap font-body">{m.text}</pre>
+        <div className="flex-1 overflow-auto px-5">
+          {msgs.length === 0 ? (
+            <div className="pt-40 text-center">
+              <p className="font-display text-[26px] tracking-tight">Welcome, builder</p>
+              <div className="mt-5 flex gap-2 overflow-x-auto pb-2">
+                {QUICK.map((q) => (
+                  <button key={q} onClick={() => send(q)} className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[13px] text-white/80 hover:bg-white/10">
+                    <Plus size={14} />{q}
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
-          {busy && <p className="text-sm text-white/40">Drafting with {model}.</p>}
+          ) : (
+            <div className="space-y-3 py-4">
+              <p className="text-center font-display text-xl">Welcome, builder</p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {QUICK.map((q) => (
+                  <button key={q} onClick={() => send(q)} className="shrink-0 whitespace-nowrap rounded-full border border-white/10 px-4 py-1.5 text-[13px] text-white/70">{q}</button>
+                ))}
+              </div>
+              {msgs.map((m, i) => (
+                <div key={i} className={m.role === "user" ? "ml-10 rounded-2xl bg-white/10 p-3 text-[13px]" : "mr-6 rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-[13px] text-white/85"}>
+                  <pre className="whitespace-pre-wrap font-body">{m.text}</pre>
+                </div>
+              ))}
+              {busy && <p className="text-[13px] text-white/40">Drafting with {model}.</p>}
+              <div ref={bottomRef} />
+            </div>
+          )}
         </div>
 
-        <div className="border-t border-white/10 p-4">
-          <div className="rounded-3xl border border-sky-400/60 p-3">
-            <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={2} placeholder="Describe the next mechanic" className="w-full bg-transparent text-sm outline-none placeholder:text-white/30" />
+        <div className="p-4">
+          <div className="rounded-3xl border-2 border-sky-400/80 bg-[#161618] p-3">
+            <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }} rows={2} placeholder="Connect your Roblox key in Studio first" className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-white/30" />
             <div className="mt-2 flex items-center gap-2">
-              <button onClick={() => fileRef.current?.click()} className="rounded-full border border-white/15 px-3 py-2 text-sm">+</button>
+              <button onClick={() => fileRef.current?.click()} className="rounded-full bg-white/5 p-2.5 text-white/70 hover:bg-white/10"><Plus size={16} /></button>
               <input ref={fileRef} type="file" accept="image/*,.obj,.glb,.gltf,.fbx" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-              <select value={model} onChange={(e) => setModel(e.target.value)} className="rounded-full border border-white/15 bg-transparent px-3 py-2 text-sm">
+              <select value={model} onChange={(e) => setModel(e.target.value)} className="max-w-44 rounded-full bg-white/5 px-3 py-2 text-[13px] text-white/80 outline-none">
                 {FREE_MODELS.map((m) => <option key={m.id} value={m.id} className="text-black">{m.label}</option>)}
               </select>
-              <button onClick={() => send(input)} disabled={busy} className="ml-auto rounded-full bg-lime-300 px-4 py-2 text-sm text-black disabled:opacity-50">Send</button>
+              <button onClick={() => send(input)} disabled={busy} className="ml-auto rounded-full bg-[#d7e94c] p-2.5 text-black disabled:opacity-40"><ArrowRight size={16} weight="bold" /></button>
             </div>
           </div>
           {(image || ref3d) && <button onClick={() => { setImage(null); setRef3d(""); }} className="mt-2 text-xs text-white/40 underline">Clear attachments</button>}
-          <div className="mt-2 space-y-1">
-            {goals.map((g, i) => (
-              <label key={g} className="flex items-center gap-2 text-xs text-white/60">
-                <input type="checkbox" checked={done[i]} onChange={() => setDone(done.map((d, j) => (j === i ? !d : d)))} />{g}
-              </label>
-            ))}
-          </div>
         </div>
       </section>
     </main>
